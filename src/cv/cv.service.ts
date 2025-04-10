@@ -3,6 +3,8 @@ import { GenericCrud } from '../generic/generic-crud.services';
 import { Cv } from './entities/cv.entity';
 import { Like, Equal,Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import {  FindOneOptions } from 'typeorm';
+import { User } from 'src/user/entities/user.entity';
 @Injectable()
 export class CvService extends GenericCrud<Cv> {
     constructor(
@@ -51,5 +53,16 @@ export class CvService extends GenericCrud<Cv> {
     cv.path = imagePath;
   
     return this.repository.save(cv); 
+  }
+  async findOne(options: FindOneOptions<Cv>): Promise<Cv | null>{
+    return this.repository.findOne(options);
+  }
+  async findByUserId(id: number){
+    return this.repository.find({  where: {
+      user: {
+        id: id, 
+      },
+    },
+  })
   }
 }

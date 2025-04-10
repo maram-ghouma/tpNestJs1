@@ -40,8 +40,10 @@ import { FileUploadInterceptor } from './Filtres/file-upload.interceptor';
   controllers: [AppController],
   providers: [AppService,FileUploadInterceptor],
 })
-export class AppModule implements NestModule{
+export class AppModule {}
+/*implements NestModule{
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(AuthMiddleware).forRoutes(Cv2Controller);
   } 
-}
+}*/
+

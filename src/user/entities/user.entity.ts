@@ -11,6 +11,10 @@ export class User extends TimestampEntity {
     email:string;
     @Column()
     password:string;
+    @Column({ type: 'varchar', length: 100 })
+    salt: string;  
+    @Column({ type: 'varchar', length: 50 })
+    role: string;
     @OneToMany(
         () =>Cv,
         (cv:Cv) => cv.user,

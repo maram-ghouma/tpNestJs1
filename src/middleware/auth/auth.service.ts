@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../../user/user.service';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import * as bcrypt from 'bcrypt';
+import { User } from 'src/user/entities/user.entity';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
@@ -8,14 +12,59 @@ export class AuthService {
 
     async login(email: string, password: string) {
         const user = await this.usersService.findOne(email);
-        if (!user || user.password !== password) { 
-            throw new Error('Invalid credentials');
+        
+        if (!user) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        
+        if (!password) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        
+        if (!user.password) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+        
+        try {
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            
+            if (!isPasswordValid) {
+                throw new UnauthorizedException('Invalid credentials');
+            }
+            
+            const payload = { id: user.id, email: user.email, role: user.role };
+            const token = this.jwtService.sign(payload);
+            return { access_token: token };
+        } catch (error) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+    }
+
+    async register(createUserDto: CreateUserDto) {
+        const { username, email, password, role } = createUserDto;
+
+        const existingUser = await this.usersService.findOne(email);
+        if (existingUser) {
+            throw new UnauthorizedException('Email is already in use');
         }
 
-        // Generate a JWT token
-        const payload = { id: user.id, email: user.email };
-        const token = this.jwtService.sign(payload);
+        const userRole = role || 'user';
 
-        return { access_token: token };
+        const validRoles = ['admin', 'user'];
+        if (!validRoles.includes(userRole)) {
+            throw new UnauthorizedException('Invalid role');
+        }
+
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        const newUser = new User();
+        newUser.username = username;
+        newUser.email = email;
+        newUser.password = hashedPassword;
+        newUser.salt = salt;
+        newUser.role = userRole;
+
+        return this.usersService.create(newUser);
     }
 }
